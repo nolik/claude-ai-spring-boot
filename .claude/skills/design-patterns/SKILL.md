@@ -130,6 +130,10 @@ public interface PaymentStrategy {
 public class CreditCardPayment implements PaymentStrategy {
     private final String cardNumber;
 
+    public CreditCardPayment(String cardNumber) {
+        this.cardNumber = cardNumber;
+    }
+
     @Override
     public void pay(BigDecimal amount) {
         System.out.println("Paid " + amount + " with card");
@@ -172,6 +176,10 @@ public record OrderPlacedEvent(Order order) {}
 @Service
 public class OrderService {
     private final ApplicationEventPublisher eventPublisher;
+
+    public OrderService(ApplicationEventPublisher eventPublisher) {
+        this.eventPublisher = eventPublisher;
+    }
 
     public void placeOrder(Order order) {
         saveOrder(order);

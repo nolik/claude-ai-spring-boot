@@ -1,6 +1,6 @@
 ---
 name: logging-patterns
-description: Java logging best practices with SLF4J, structured logging (JSON), and MDC for request tracing. Includes AI-friendly log formats for Claude Code debugging. Use when user asks about logging, debugging application flow, or analyzing logs.
+description: Java logging with SLF4J and Spring Boot structured (JSON) logging, including log formats that are easy to query with jq. Use when the user asks about adding or improving logging, or analyzing application logs.
 ---
 
 # Logging Patterns Skill
@@ -156,16 +156,15 @@ logging:
 
 ---
 
-## Setup for Spring Boot < 3.4
+## Logstash Logback Encoder
 
-### Logstash Logback Encoder
+Use this when a service needs `kv()` structured arguments or a custom `logback-spring.xml`, beyond what Spring Boot's built-in structured logging gives. In this workspace the encoder comes in through `spring-generic/gv-visibility`, which manages the version (`logstash-logback-encoder.version` in its pom), so don't pin one in the service.
 
 **pom.xml:**
 ```xml
 <dependency>
     <groupId>net.logstash.logback</groupId>
     <artifactId>logstash-logback-encoder</artifactId>
-    <version>7.4</version>
 </dependency>
 ```
 
@@ -248,3 +247,6 @@ log.debug("Processing order " + orderId + " for user " + userId);
 
 // ✅ For expensive operations
 if (log.isDebugEnabled()) {
+    log.debug("Full order details: {}", order.toJson());
+}
+```
