@@ -14,14 +14,9 @@ metadata:
 
 Enterprise Spring Boot 3.x development with focus on clean architecture and production-ready code.
 
-## Core Workflow
+## Done means
 
-1. **Analyze** - Understand requirements, identify service boundaries, APIs, data models
-2. **Design** - Plan architecture, confirm design before coding
-3. **Implement** - Build with constructor injection and layered architecture
-4. **Secure** - Add Spring Security, OAuth2, method security; verify tests pass
-5. **Test** - Write unit, integration tests; run `./mvnw test` and confirm all pass
-6. **Deploy** - Configure health checks via Actuator; validate `/actuator/health` returns UP
+Run the owning repo's test command (`./mvnw test`, or `mvn test` where there is no wrapper) and `spotless:apply`, and confirm the tests are green before reporting the work done.
 
 ## Quick Start Templates
 
@@ -29,6 +24,9 @@ Enterprise Spring Boot 3.x development with focus on clean architecture and prod
 ```java
 @Entity
 @Table(name = "products")
+@Getter
+@Setter
+@NoArgsConstructor
 public class Product {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -39,8 +37,6 @@ public class Product {
 
     @DecimalMin("0.0")
     private BigDecimal price;
-
-    // Getters/Setters (no Lombok)
 }
 ```
 
@@ -134,7 +130,7 @@ public class GlobalExceptionHandler {
 @WebMvcTest(ProductController.class)
 class ProductControllerTest {
     @Autowired MockMvc mockMvc;
-    @MockBean ProductService service;
+    @MockitoBean ProductService service; // org.springframework.test.context.bean.override.mockito.MockitoBean
 
     @Test
     void createProduct_validRequest_returns201() throws Exception {
@@ -144,7 +140,9 @@ class ProductControllerTest {
 
         mockMvc.perform(post("/api/v1/products")
                 .contentType(MediaType.APPLICATION_JSON)
-                .content("""{"name":"Widget","price":10.0}"""))
+                .content("""
+                    {"name":"Widget","price":10.0}
+                    """))
             .andExpect(status().isCreated())
             .andExpect(jsonPath("$.name").value("Widget"));
     }
@@ -165,42 +163,21 @@ Load detailed patterns based on context:
 
 ## Constraints
 
-### MUST DO
-- Constructor injection (no field injection)
-- `@Valid` on all request bodies
-- `@Transactional` for multi-step writes
-- `@Transactional(readOnly = true)` for reads
-- Type-safe config with `@ConfigurationProperties`
-- Global exception handling with `@RestControllerAdvice`
-- Externalize secrets (use env vars, not properties files)
-
-### MUST NOT DO
-- Field injection (`@Autowired` on fields)
-- Skip input validation on endpoints
-- Mix blocking and reactive code
-- Store secrets in application.properties
-- Use deprecated Spring Boot 2.x patterns
-- Hardcode URLs, credentials, environment values
+- Constructor injection only; no field `@Autowired` in beans. This matches the repos' CLAUDE.md files.
+- Validate request bodies with `@Valid`, and handle errors in one `@RestControllerAdvice`.
+- Read configuration through `@ConfigurationProperties`. Keep secrets and environment-specific URLs out of `application.*`; they come from env vars or Consul.
 
 ## Architecture Patterns
 
-**Project Structure:**
+**Project Structure:** packages are feature-first, with layers inside each feature. scan-manager, for example, uses `com.getvisibility.scanmanager.<domain>.<layer>`. Follow the owning repo's CLAUDE.md for its exact layout.
 ```
-src/main/java/pl/piomin/services/
-├── controller/     # REST endpoints
-├── service/        # Business logic
-├── repository/     # Data access
-├── model/          # Entities
-├── dto/            # Request/Response DTOs
-├── config/         # Configuration
-└── exception/      # Custom exceptions + handler
+src/main/java/com/getvisibility/<service>/
+├── <domain>/          # one package per feature (e.g. scan, connector, tagging)
+│   ├── controller/    # implements the OpenAPI-generated interface
+│   ├── service/
+│   └── repository/
+└── configs/           # cross-cutting Spring config beans
 ```
-
-**Layering:**
-- Controller → Service → Repository
-- Controller handles HTTP, validation
-- Service handles business logic, transactions
-- Repository handles data persistence
 
 **Clean Architecture Principles:**
 - Domain models independent of frameworks
@@ -269,4 +246,4 @@ public class SecurityConfig {
 
 ## Knowledge Base
 
-Spring Boot 3.x, Java 21, Spring WebFlux, Project Reactor, Spring Data JPA, Spring Security 6, OAuth2/JWT, Hibernate, R2DBC, Spring Cloud, Resilience4j, Micrometer, JUnit 5, TestContainers, Mockito, Maven/Gradle
+Spring Boot 3.5, Java 25, Spring Kafka, Spring Data Redis, Spring Security 6, OAuth2/JWT (Keycloak), Resilience4j, Failsafe, Micrometer, JUnit 5, Testcontainers, Mockito, AssertJ, Instancio, Maven

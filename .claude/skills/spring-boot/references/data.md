@@ -340,12 +340,8 @@ List<UserSummaryDto> dtos = userRepository.findAllBy(UserSummaryDto.class);
 ## Query Optimization
 
 ```java
-@Service
-@RequiredArgsConstructor
-@Transactional(readOnly = true)
-public class UserQueryService {
-    private final UserRepository userRepository;
-    private final EntityManager entityManager;
+// Query and fetch annotations belong on the repository interface, not on a @Service
+public interface UserRepository extends JpaRepository<User, Long> {
 
     // N+1 problem solved with JOIN FETCH
     @Query("SELECT DISTINCT u FROM User u " +
@@ -354,19 +350,11 @@ public class UserQueryService {
            "WHERE u.active = true")
     List<User> findAllActiveWithAssociations();
 
-    // Batch fetching
-    @BatchSize(size = 25)
-    @OneToMany(mappedBy = "user")
-    private List<Order> orders;
-
     // EntityGraph for dynamic fetching
     @EntityGraph(attributePaths = {"addresses", "roles"})
     List<User> findAllByActiveTrue();
 
-    // Pagination to avoid loading all data
-    public Page<User> findAllUsers(Pageable pageable) {
-        return userRepository.findAll(pageable);
-    }
+    // Pagination to avoid loading all data: findAll(Pageable) is inherited
 
     // Native query for complex queries
     @Query(value = """
@@ -379,6 +367,9 @@ public class UserQueryService {
     List<User> findFrequentBuyers(@Param("since") LocalDateTime since,
                                   @Param("minOrders") int minOrders);
 }
+
+// Batch fetching goes on the entity association:
+// @OneToMany(mappedBy = "user") @BatchSize(size = 25) private List<Order> orders;
 ```
 
 ## Database Migrations (Flyway)
